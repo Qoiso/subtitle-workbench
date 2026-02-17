@@ -24,7 +24,13 @@ if (!(Test-Path $ffprobeExe)) {
   throw "ffprobe.exe not found: $ffprobeExe"
 }
 
-& $PythonExe -m pip install --upgrade pyinstaller
+& $PythonExe -c "import importlib.util,sys;sys.exit(0 if importlib.util.find_spec('PyInstaller') else 1)"
+if ($LASTEXITCODE -ne 0) {
+  & $PythonExe -m pip install pyinstaller
+  if ($LASTEXITCODE -ne 0) {
+    throw "Failed to install PyInstaller. Check network/proxy or install it manually in the selected Python environment."
+  }
+}
 
 & $PythonExe -m PyInstaller --noconfirm --clean `
   --name $OutName `
@@ -32,6 +38,9 @@ if (!(Test-Path $ffprobeExe)) {
   --icon "resources/icon/app.ico" `
   --add-data "resources;resources" `
   app/main.py
+if ($LASTEXITCODE -ne 0) {
+  throw "PyInstaller build failed."
+}
 
 $distRoot = Join-Path $repoRoot "dist"
 $appRoot = Join-Path $distRoot $OutName
